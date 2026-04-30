@@ -11,6 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Password } from "primereact/password";
 import { Sidebar } from "primereact/sidebar";
 import { useNavigate } from "react-router-dom";
+import API_CONFIG from "./api";   // ✅ add this
 function EmployeeList() {
   const toast = useRef(null);
    const navigate = useNavigate();
@@ -46,6 +47,9 @@ function EmployeeList() {
     phoneNumber: "",
     isActive: true
   });
+  // ✅ API URL from ENV
+  const API_URL = API_CONFIG.EMPLOYEE_URL;
+
    const authHeader = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`
@@ -63,7 +67,7 @@ function EmployeeList() {
   // GET ALL
   const fetchEmployees = async () => {
     try {
-      const res = await fetch("https://localhost:7175/api/Employee", {
+      const res = await fetch(  API_CONFIG.EMPLOYEE_URL, {
         method: "GET",
         headers: authHeader
       });
@@ -193,7 +197,7 @@ function EmployeeList() {
      // ADD
   const createEmployee = async () => {
     try {
-      const res = await fetch("https://localhost:7175/api/Employee", {
+      const res = await fetch(  API_CONFIG.EMPLOYEE_URL, {
         method: "POST",
         headers: authHeader,
         body: JSON.stringify(newEmployee)
@@ -251,7 +255,7 @@ function EmployeeList() {
   const updateEmployee = async () => {
     try {
       const res = await fetch(
-        `https://localhost:7175/api/Employee?Id=${newEmployee.id}`,
+        `${API_CONFIG.EMPLOYEE_URL}?Id=${newEmployee.id}`,
         {
           method: "PUT",
           headers: authHeader,
@@ -279,7 +283,7 @@ function EmployeeList() {
   const deleteEmployee = async (id) => {
     try {
       const res = await fetch(
-        `https://localhost:7175/api/Employee?Id=${id}`,
+         `${API_CONFIG.EMPLOYEE_URL}?Id=${id}`,
         {
           method: "DELETE",
           headers: {
