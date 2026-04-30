@@ -14,6 +14,7 @@ import { Password } from "primereact/password";
 import { Sidebar } from "primereact/sidebar";
 import { useNavigate } from "react-router-dom";
 import { Accordion, AccordionTab } from "primereact/accordion";
+import API_CONFIG from "./api";   // ✅ add this
 function StudentList() {
   const toast = useRef(null);
 const navigate = useNavigate();
@@ -51,7 +52,7 @@ const handleLogout = () => {
   //   localStorage.removeItem("token");
   //   navigate("/");
   // };
-
+    const API_URL = API_CONFIG.STUDENT_URL;
   // COMMON HEADER
   const authHeader = {
     "Content-Type": "application/json",
@@ -61,7 +62,7 @@ const handleLogout = () => {
   // GET ALL
   const fetchStudents = async () => {
     try {
-      const res = await fetch("https://localhost:7175/api/Student", {
+      const res = await fetch(API_CONFIG.STUDENT_URL, {
         method: "GET",
         headers: authHeader
       });
@@ -177,7 +178,7 @@ const handleLogout = () => {
      // ADD
   const createStudent = async () => {
     try {
-      const res = await fetch("https://localhost:7175/api/Student", {
+      const res = await fetch(API_CONFIG.STUDENT_URL, {
         method: "POST",
         headers: authHeader,
         body: JSON.stringify({
@@ -228,7 +229,7 @@ const handleLogout = () => {
     // UPDATE
   const updateStudent = async () => {
     try {
-      const res = await fetch("https://localhost:7175/api/Student", {
+      const res = await fetch(API_CONFIG.STUDENT_URL, {
         method: "PUT",
         headers: authHeader,
         body: JSON.stringify(newStudent)
@@ -250,7 +251,7 @@ const handleLogout = () => {
        // DELETE
   const deleteStudent = async (id) => {
     try {
-      const res = await fetch(`https://localhost:7175/api/Student/${id}`, {
+      const res = await fetch(`${API_CONFIG.STUDENT_URL}/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`

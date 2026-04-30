@@ -9,6 +9,7 @@ import { Accordion, AccordionTab } from "primereact/accordion";
 import { Password } from "primereact/password";
 import { Sidebar } from "primereact/sidebar";
 import { useNavigate } from "react-router-dom";
+import API_CONFIG from "./api";   // ✅ add this
 function DepartmentList() {
   const toast = useRef(null);
 
@@ -36,7 +37,7 @@ function DepartmentList() {
     departmentName: "",
     isActive: true
   });
-      const API_URL = "https://localhost:7175/api/Department";
+      const API_URL = API_CONFIG.DEPARTMENT_URL;
 
   const getToken = () => {
     return localStorage.getItem("token");
@@ -72,7 +73,7 @@ function DepartmentList() {
 
   const fetchDepartments = async () => {
     try {
-      const res = await fetch("https://localhost:7175/api/Department", {
+      const res = await fetch(API_CONFIG.DEPARTMENT_URL, {
         method: "GET",
         headers: authHeader()
       });
@@ -169,7 +170,7 @@ function DepartmentList() {
   }
 
   try {
-    const res = await fetch("https://localhost:7175/api/Department", {
+    const res = await fetch(API_CONFIG.DEPARTMENT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -255,8 +256,8 @@ const confirmAdd = () => {
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch(
-      `https://localhost:7175/api/Department?id=${id}`,
+    const res = await fetch
+    (`${API_CONFIG.DEPARTMENT_URL}?id=${id}`,
       {
         method: "DELETE",
         headers: {
@@ -371,7 +372,7 @@ const editDepartment = async (dept) => {
 
   try {
     const res = await fetch(
-      `https://localhost:7175/api/Department/${dept.departmentId}`,
+      `${API_CONFIG.DEPARTMENT_URL}/${dept.departmentId}`,
       {
         method: "GET",
         headers: {
@@ -417,7 +418,7 @@ const updateDepartment = async () => {
   }
 
   try {
-    const res = await fetch("https://localhost:7175/api/Department", {
+    const res = await fetch(API_CONFIG.DEPARTMENT_URL, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

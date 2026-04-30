@@ -11,6 +11,8 @@ import { Password } from "primereact/password";
 import { Toast } from "primereact/toast";
 import { Divider } from "primereact/divider";
 
+import API_CONFIG from "./api";   // ✅ add this
+
 function Login() {
   const toast = useRef(null);
   const navigate = useNavigate();
@@ -50,13 +52,17 @@ function Login() {
     });
   };
 
+  // ✅ LOGIN CHANGED
   const handleLogin = async () => {
     try {
       setLoading(true);
 
-      const res = await fetch("https://localhost:7175/api/Auth/login", {
+      const res = await fetch(API_CONFIG.AUTH_LOGIN_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_CONFIG.API_KEY
+        },
         body: JSON.stringify(loginData)
       });
 
@@ -86,13 +92,17 @@ function Login() {
     }
   };
 
+  // ✅ REGISTER CHANGED
   const handleRegister = async () => {
     try {
       setLoading(true);
 
-      const res = await fetch("https://localhost:7175/api/Users", {
+      const res = await fetch(API_CONFIG.USERS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_CONFIG.API_KEY
+        },
         body: JSON.stringify(registerData)
       });
 
@@ -118,6 +128,7 @@ function Login() {
       setLoading(false);
     }
   };
+
 
   return (
     <div
@@ -424,3 +435,136 @@ function Login() {
 }
 
 export default Login;
+
+
+
+// import React, { useRef, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+
+// import "primereact/resources/themes/lara-light-cyan/theme.css";
+// import "primeicons/primeicons.css";
+
+// import { Card } from "primereact/card";
+// import { Button } from "primereact/button";
+// import { InputText } from "primereact/inputtext";
+// import { Password } from "primereact/password";
+// import { Toast } from "primereact/toast";
+// import { Divider } from "primereact/divider";
+
+// import API_CONFIG from "./api";   // ✅ add this
+
+// function Login() {
+//   const toast = useRef(null);
+//   const navigate = useNavigate();
+
+//   const [showRegister, setShowRegister] = useState(false);
+//   const [loading, setLoading] = useState(false);
+
+//   const [loginData, setLoginData] = useState({
+//     email: "",
+//     password: ""
+//   });
+
+//   const [registerData, setRegisterData] = useState({
+//     userName: "",
+//     firstName: "",
+//     lastName: "",
+//     email: "",
+//     phoneNumber: "",
+//     password: ""
+//   });
+
+//   const inputStyle = {
+//     width: "100%",
+//     marginBottom: "14px",
+//     height: "46px",
+//     borderRadius: "12px"
+//   };
+
+//   const clearRegisterForm = () => {
+//     setRegisterData({
+//       userName: "",
+//       firstName: "",
+//       lastName: "",
+//       email: "",
+//       phoneNumber: "",
+//       password: ""
+//     });
+//   };
+
+//   // ✅ LOGIN CHANGED
+//   const handleLogin = async () => {
+//     try {
+//       setLoading(true);
+
+//       const res = await fetch(API_CONFIG.AUTH_LOGIN_URL, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           "x-api-key": API_CONFIG.API_KEY
+//         },
+//         body: JSON.stringify(loginData)
+//       });
+
+//       if (!res.ok) throw new Error();
+
+//       const data = await res.json();
+
+//       localStorage.setItem("token", data.token);
+
+//       toast.current.show({
+//         severity: "success",
+//         summary: "Success",
+//         detail: "Login Successful",
+//         life: 3000
+//       });
+
+//       navigate("/employee");
+//     } catch {
+//       toast.current.show({
+//         severity: "error",
+//         summary: "Error",
+//         detail: "Invalid Login",
+//         life: 3000
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // ✅ REGISTER CHANGED
+//   const handleRegister = async () => {
+//     try {
+//       setLoading(true);
+
+//       const res = await fetch(API_CONFIG.USERS_URL, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           "x-api-key": API_CONFIG.API_KEY
+//         },
+//         body: JSON.stringify(registerData)
+//       });
+
+//       if (!res.ok) throw new Error();
+
+//       toast.current.show({
+//         severity: "success",
+//         summary: "Success",
+//         detail: "Registration Successful",
+//         life: 3000
+//       });
+
+//       clearRegisterForm();
+//       setShowRegister(false);
+//     } catch {
+//       toast.current.show({
+//         severity: "error",
+//         summary: "Error",
+//         detail: "Registration Failed",
+//         life: 3000
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
