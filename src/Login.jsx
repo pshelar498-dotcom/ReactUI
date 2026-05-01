@@ -232,7 +232,8 @@ function Login() {
                     password: e.target.value
                   })
                }
-                   style={{ width: "100%" }}
+                  //  style={{ width: "100%" }}
+                  style={{ width: "100%", display:"block",marginBottom: "16px" }}
                     inputStyle={{
                    width: "100%",
                     height: "46px",
