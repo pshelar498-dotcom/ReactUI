@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// import React, { useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primeicons/primeicons.css";
@@ -10,15 +10,22 @@ import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
 import { Toast } from "primereact/toast";
 import { Divider } from "primereact/divider";
-
-import API_CONFIG from "./api";   // ✅ add this
+import React, { useRef, useState, useEffect } from "react";
+import API_CONFIG from "./api";
 
 function Login() {
   const toast = useRef(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const token = searchParams.get("token");
 
   const [showRegister, setShowRegister] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(!!token);
+
   const [loading, setLoading] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   const [loginData, setLoginData] = useState({
     email: "",
@@ -32,6 +39,11 @@ function Login() {
     email: "",
     phoneNumber: "",
     password: ""
+  });
+
+  const [resetData, setResetData] = useState({
+    newPassword: "",
+    confirmPassword: ""
   });
 
   const inputStyle = {
@@ -52,7 +64,9 @@ function Login() {
     });
   };
 
-  // ✅ LOGIN CHANGED
+  // =============================
+  // LOGIN
+  // =============================
   const handleLogin = async () => {
     try {
       setLoading(true);
@@ -69,7 +83,6 @@ function Login() {
       if (!res.ok) throw new Error();
 
       const data = await res.json();
-
       localStorage.setItem("token", data.token);
 
       toast.current.show({
@@ -92,7 +105,9 @@ function Login() {
     }
   };
 
-  // ✅ REGISTER CHANGED
+  // =============================
+  // REGISTER
+  // =============================
   const handleRegister = async () => {
     try {
       setLoading(true);
@@ -129,6 +144,106 @@ function Login() {
     }
   };
 
+  // =============================
+  // FORGOT PASSWORD
+  // =============================
+ const handleForgotPassword = async () => {
+  try {
+    setLoading(true);
+
+    const res = await fetch(API_CONFIG.FORGOT_PASSWORD_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: forgotEmail
+      })
+    });
+
+    const text = await res.text();
+
+    console.log("API RESPONSE:", text); // 👈 DEBUG
+
+    if (!res.ok) throw new Error(text);
+
+    toast.current.show({
+      severity: "success",
+      summary: "Success",
+      detail: text,
+      life: 3000
+    });
+
+  } catch (err) {
+    console.error("ERROR:", err); // 👈 DEBUG
+
+    toast.current.show({
+      severity: "error",
+      summary: "Error",
+      detail: err.message,
+      life: 4000
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // =============================
+  // RESET PASSWORD
+  // =============================
+  const handleResetPassword = async () => {
+    try {
+      if (resetData.newPassword !== resetData.confirmPassword) {
+        toast.current.show({
+          severity: "warn",
+          summary: "Warning",
+          detail: "Passwords do not match",
+          life: 3000
+        });
+        return;
+      }
+
+      setLoading(true);
+
+      const res = await fetch(API_CONFIG.RESET_PASSWORD_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_CONFIG.API_KEY
+        },
+        body: JSON.stringify({
+          token: token,
+          newPassword: resetData.newPassword
+        })
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast.current.show({
+        severity: "success",
+        summary: "Success",
+        detail: "Password changed successfully",
+        life: 3000
+      });
+
+      setResetData({
+        newPassword: "",
+        confirmPassword: ""
+      });
+
+      setShowResetPassword(false);
+      navigate("/");
+    } catch {
+      toast.current.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Password reset failed",
+        life: 3000
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -156,92 +271,99 @@ function Login() {
         }}
       >
         <div style={{ textAlign: "center", marginBottom: "24px" }}>
-          <div
-            style={{
-              width: "78px",
-              height: "78px",
-              margin: "0 auto",
-              borderRadius: "50%",
-              background:
-                "linear-gradient(135deg,#06b6d4,#2563eb,#7c3aed)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 12px 30px rgba(37,99,235,.35)"
-            }}
-          >
-            <i
-              className="pi pi-user"
-              style={{
-                color: "#fff",
-                fontSize: "2rem"
-              }}
-            ></i>
-          </div>
-
-          <h2
-            style={{
-              marginTop: "18px",
-              marginBottom: "6px",
-              fontSize: "28px",
-              fontWeight: "700",
-              color: "#111827"
-            }}
-          >
-            {showRegister ? "Create Account" : "Welcome Back"}
+          <h2>
+            {showResetPassword
+              ? "Reset Password"
+              : showForgotPassword
+              ? "Forgot Password"
+              : showRegister
+              ? "Create Account"
+              : "Welcome Back"}
           </h2>
-
-          <p
-            style={{
-              margin: 0,
-              color: "#6b7280",
-              fontSize: "14px"
-            }}
-          >
-            {showRegister
-              ? "Register to continue"
-              : "Login to your account"}
-          </p>
         </div>
 
-        {!showRegister ? (
+        {/* RESET PASSWORD */}
+        {showResetPassword ? (
           <>
-            <span className="p-input-icon-left" style={{ width: "100%" }}>
-              {/* <i className="pi pi-envelope" /> */}
-              <InputText
-                placeholder="Email Address"
-                value={loginData.email}
-                onChange={(e) =>
-                  setLoginData({
-                    ...loginData,
-                    email: e.target.value
-                  })
-                }
-                style={inputStyle}
-              />
-            </span>
-               <div style={{ width: "100%", marginBottom: "16px" }}>
-               <Password
-                placeholder="Password"
-                feedback={false}
-                toggleMask
-                value={loginData.password}
-                 onChange={(e) =>
-                 setLoginData({
+            <Password
+              placeholder="New Password"
+              feedback={false}
+              toggleMask
+              value={resetData.newPassword}
+              onChange={(e) =>
+                setResetData({
+                  ...resetData,
+                  newPassword: e.target.value
+                })
+              }
+              style={{ width: "100%", marginBottom: "14px" }}
+              inputStyle={inputStyle}
+            />
+
+            <Password
+              placeholder="Confirm Password"
+              feedback={false}
+              toggleMask
+              value={resetData.confirmPassword}
+              onChange={(e) =>
+                setResetData({
+                  ...resetData,
+                  confirmPassword: e.target.value
+                })
+              }
+              style={{ width: "100%", marginBottom: "14px" }}
+              inputStyle={inputStyle}
+            />
+
+            <Button
+              label={loading ? "Updating..." : "Reset Password"}
+              icon="pi pi-check"
+              onClick={handleResetPassword}
+              style={{ width: "100%", marginBottom: "10px" }}
+            />
+          </>
+        ) : showForgotPassword ? (
+          <>
+            <InputText
+              placeholder="Enter your registered email"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              style={inputStyle}
+            />
+
+            <Button
+              label={loading ? "Sending..." : "Send Reset Link"}
+              icon="pi pi-envelope"
+              onClick={handleForgotPassword}
+              style={{
+                width: "100%",
+                marginBottom: "10px"
+              }}
+            />
+
+            <Button
+              label="Back To Login"
+              icon="pi pi-arrow-left"
+              onClick={() => setShowForgotPassword(false)}
+              className="p-button-secondary"
+              style={{ width: "100%" }}
+            />
+          </>
+        ) : !showRegister ? (
+          <>
+            <InputText
+              placeholder="Email Address"
+              value={loginData.email}
+              onChange={(e) =>
+                setLoginData({
                   ...loginData,
-                    password: e.target.value
-                  })
-               }
-                  //  style={{ width: "100%" }}
-                  style={{ width: "100%", display:"block",marginBottom: "16px" }}
-                    inputStyle={{
-                   width: "100%",
-                    height: "46px",
-                   borderRadius: "12px"
-                     }}
-  />
-                </div>
-            {/* <Password
+                  email: e.target.value
+                })
+              }
+              style={inputStyle}
+            />
+
+            <Password
               placeholder="Password"
               feedback={false}
               toggleMask
@@ -253,49 +375,31 @@ function Login() {
                 })
               }
               style={{ width: "100%", marginBottom: "16px" }}
-              inputStyle={{
-                width: "100%",
-                height: "46px",
-                borderRadius: "12px"
-              }}
-            /> */}
+              inputStyle={inputStyle}
+            />
 
             <Button
               label={loading ? "Please Wait..." : "Login"}
               icon="pi pi-sign-in"
               onClick={handleLogin}
-              disabled={loading}
-              style={{
-                width: "100%",
-                height: "48px",
-                borderRadius: "14px",
-                border: "none",
-                fontWeight: "700",
-                background:
-                  "linear-gradient(90deg,#06b6d4,#2563eb)",
-                boxShadow: "0 10px 25px rgba(37,99,235,.28)"
-              }}
+              style={{ width: "100%", marginBottom: "10px" }}
             />
 
-            <Divider align="center">
-              <span style={{ fontSize: "12px", color: "#94a3b8" }}>
-                OR
-              </span>
-            </Divider>
+            <Button
+              label="Forgot Password?"
+              icon="pi pi-key"
+              className="p-button-text"
+              onClick={() => setShowForgotPassword(true)}
+              style={{ width: "100%", marginBottom: "10px" }}
+            />
+
+            <Divider align="center">OR</Divider>
 
             <Button
               label="Create New Account"
               icon="pi pi-user-plus"
               onClick={() => setShowRegister(true)}
-              style={{
-                width: "100%",
-                height: "46px",
-                borderRadius: "14px",
-                border: "2px solid #22c55e",
-                background: "transparent",
-                color: "#16a34a",
-                fontWeight: "700"
-              }}
+              style={{ width: "100%" }}
             />
           </>
         ) : (
@@ -372,62 +476,29 @@ function Login() {
                 })
               }
               style={{ width: "100%", marginBottom: "16px" }}
-              inputStyle={{
-                width: "100%",
-                height: "46px",
-                borderRadius: "12px"
-              }}
+              inputStyle={inputStyle}
             />
 
             <Button
               label="Register"
               icon="pi pi-check"
               onClick={handleRegister}
-              disabled={loading}
-              style={{
-                width: "100%",
-                height: "46px",
-                marginBottom: "10px",
-                borderRadius: "14px",
-                border: "none",
-                fontWeight: "700",
-                background:
-                  "linear-gradient(90deg,#22c55e,#15803d)"
-              }}
+              style={{ width: "100%", marginBottom: "10px" }}
             />
 
             <Button
               label="Clear Form"
               icon="pi pi-refresh"
               onClick={clearRegisterForm}
-              style={{
-                width: "100%",
-                height: "46px",
-                marginBottom: "10px",
-                borderRadius: "14px",
-                border: "none",
-                background:
-                  "linear-gradient(90deg,#f59e0b,#ea580c)",
-                fontWeight: "700"
-              }}
+              style={{ width: "100%", marginBottom: "10px" }}
             />
 
             <Button
-  label="Back To Login"
-  icon="pi pi-arrow-left"
-  onClick={() => setShowRegister(false)}
-  style={{
-    width: "100%",
-    height: "46px",
-    borderRadius: "14px",
-    border: "none",
-    fontWeight: "700",
-    color: "#ffffff",
-    background:
-      "linear-gradient(90deg,#3b82f6,#2563eb)",
-    boxShadow: "0 10px 20px rgba(59,130,246,.25)"
-  }}
-/>
+              label="Back To Login"
+              icon="pi pi-arrow-left"
+              onClick={() => setShowRegister(false)}
+              style={{ width: "100%" }}
+            />
           </>
         )}
       </Card>
@@ -436,6 +507,7 @@ function Login() {
 }
 
 export default Login;
+
 
 
 
