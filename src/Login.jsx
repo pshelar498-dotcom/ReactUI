@@ -1,4 +1,4 @@
-// import React, { useRef, useState } from "react";
+// import React, { useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import "primereact/resources/themes/lara-light-cyan/theme.css";
@@ -10,42 +10,86 @@ import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
 import { Toast } from "primereact/toast";
 import { Divider } from "primereact/divider";
-import React, { useRef, useState, useEffect } from "react";
-import API_CONFIG from "./api";
+
+import React, {
+  useRef,
+  useState,
+  useEffect
+} from "react";
+
+import API_CONFIG from "./config/api";
 
 function Login() {
+
   const toast = useRef(null);
+
   const navigate = useNavigate();
+
   const [searchParams] = useSearchParams();
 
   const token = searchParams.get("token");
 
-  const [showRegister, setShowRegister] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [showResetPassword, setShowResetPassword] = useState(!!token);
+  const [showRegister, setShowRegister] =
+    useState(false);
 
-  const [loading, setLoading] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
+  const [showForgotPassword,
+    setShowForgotPassword] =
+    useState(false);
 
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: ""
-  });
+  const [showResetPassword,
+    setShowResetPassword] =
+    useState(!!token);
 
-  const [registerData, setRegisterData] = useState({
-    userName: "",
-    firstName: "",
-    lastName: "",
-    email: "",
-    phoneNumber: "",
-    password: ""
-  });
+  const [loading, setLoading] =
+    useState(false);
 
-  const [resetData, setResetData] = useState({
-    newPassword: "",
-    confirmPassword: ""
-  });
+  const [forgotEmail,
+    setForgotEmail] =
+    useState("");
 
+  // =============================
+  // ROLES
+  // =============================
+  const [roles, setRoles] =
+    useState([]);
+
+  // =============================
+  // LOGIN DATA
+  // =============================
+  const [loginData, setLoginData] =
+    useState({
+      email: "",
+      password: ""
+    });
+
+  // =============================
+  // REGISTER DATA
+  // =============================
+  const [registerData,
+    setRegisterData] =
+    useState({
+      userName: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: "",
+      password: "",
+      roleId: ""
+    });
+
+  // =============================
+  // RESET PASSWORD DATA
+  // =============================
+  const [resetData,
+    setResetData] =
+    useState({
+      newPassword: "",
+      confirmPassword: ""
+    });
+
+  // =============================
+  // INPUT STYLE
+  // =============================
   const inputStyle = {
     width: "100%",
     marginBottom: "14px",
@@ -53,55 +97,156 @@ function Login() {
     borderRadius: "12px"
   };
 
+  // =============================
+  // GET ROLES
+  // =============================
+  useEffect(() => {
+
+    fetch(API_CONFIG.ROLES_URL, {
+
+      method: "GET",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+        "x-api-key":
+          API_CONFIG.API_KEY
+      }
+
+    })
+      .then((res) => res.json())
+
+      .then((data) => {
+
+        console.log(data);
+
+        setRoles(data);
+
+      })
+
+      .catch((err) => {
+
+        console.log(err);
+
+      });
+
+  }, []);
+
+  // =============================
+  // CLEAR REGISTER FORM
+  // =============================
   const clearRegisterForm = () => {
+
     setRegisterData({
       userName: "",
       firstName: "",
       lastName: "",
       email: "",
       phoneNumber: "",
-      password: ""
+      password: "",
+      roleId: ""
     });
+
   };
 
   // =============================
   // LOGIN
   // =============================
   const handleLogin = async () => {
+
     try {
+
       setLoading(true);
 
-      const res = await fetch(API_CONFIG.AUTH_LOGIN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_CONFIG.API_KEY
-        },
-        body: JSON.stringify(loginData)
-      });
+      const res = await fetch(
+        API_CONFIG.AUTH_LOGIN_URL,
+        {
+          method: "POST",
 
-      if (!res.ok) throw new Error();
+          headers: {
+            "Content-Type":
+              "application/json",
+            "x-api-key":
+              API_CONFIG.API_KEY
+          },
+
+          body: JSON.stringify(
+            loginData
+          )
+        }
+      );
+
+      if (!res.ok) {
+
+        throw new Error(
+          "Invalid Email or Password"
+        );
+
+      }
 
       const data = await res.json();
-      localStorage.setItem("token", data.token);
+
+      localStorage.setItem(
+        "token",
+        data.token
+      );
+
+      localStorage.setItem(
+        "role",
+        data.role
+      );
+
+      localStorage.setItem(
+        "roleId",
+        data.roleId
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data)
+      );
 
       toast.current.show({
         severity: "success",
         summary: "Success",
-        detail: "Login Successful",
+        detail:
+          "Login Successful",
         life: 3000
       });
 
-      navigate("/employee");
-    } catch {
+      if (data.role === "Admin") {
+
+        navigate("/employee");
+
+      }
+      else if (
+        data.role === "SuperUser"
+      ) {
+
+        navigate("/department");
+
+      }
+      else {
+
+        navigate("/student");
+
+      }
+
+    }
+    catch (error) {
+
       toast.current.show({
         severity: "error",
         summary: "Error",
-        detail: "Invalid Login",
+        detail: error.message,
         life: 3000
       });
-    } finally {
+
+    }
+    finally {
+
       setLoading(false);
+
     }
   };
 
@@ -109,143 +254,221 @@ function Login() {
   // REGISTER
   // =============================
   const handleRegister = async () => {
+
     try {
+
       setLoading(true);
 
-      const res = await fetch(API_CONFIG.USERS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_CONFIG.API_KEY
-        },
-        body: JSON.stringify(registerData)
-      });
+      const res = await fetch(
+        API_CONFIG.USERS_URL,
+        {
+          method: "POST",
 
-      if (!res.ok) throw new Error();
+          headers: {
+            "Content-Type":
+              "application/json",
+            "x-api-key":
+              API_CONFIG.API_KEY
+          },
+
+          body: JSON.stringify(
+            registerData
+          )
+        }
+      );
+
+      if (!res.ok) {
+
+        throw new Error(
+          "Registration Failed"
+        );
+
+      }
 
       toast.current.show({
         severity: "success",
         summary: "Success",
-        detail: "Registration Successful",
+        detail:
+          "Registration Successful",
         life: 3000
       });
 
       clearRegisterForm();
+
       setShowRegister(false);
-    } catch {
+
+    }
+    catch (error) {
+
       toast.current.show({
         severity: "error",
         summary: "Error",
-        detail: "Registration Failed",
+        detail: error.message,
         life: 3000
       });
-    } finally {
+
+    }
+    finally {
+
       setLoading(false);
+
     }
   };
 
   // =============================
   // FORGOT PASSWORD
   // =============================
- const handleForgotPassword = async () => {
-  try {
-    setLoading(true);
+  const handleForgotPassword =
+    async () => {
 
-    const res = await fetch(API_CONFIG.FORGOT_PASSWORD_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        email: forgotEmail
-      })
-    });
+      try {
 
-    const text = await res.text();
+        setLoading(true);
 
-    console.log("API RESPONSE:", text); // 👈 DEBUG
+        const res = await fetch(
+          API_CONFIG.FORGOT_PASSWORD_URL,
+          {
+            method: "POST",
 
-    if (!res.ok) throw new Error(text);
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-    toast.current.show({
-      severity: "success",
-      summary: "Success",
-      detail: text,
-      life: 3000
-    });
+            body: JSON.stringify({
+              email: forgotEmail
+            })
+          }
+        );
 
-  } catch (err) {
-    console.error("ERROR:", err); // 👈 DEBUG
+        const text =
+          await res.text();
 
-    toast.current.show({
-      severity: "error",
-      summary: "Error",
-      detail: err.message,
-      life: 4000
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+        if (!res.ok) {
+
+          throw new Error(text);
+
+        }
+
+        toast.current.show({
+          severity: "success",
+          summary: "Success",
+          detail: text,
+          life: 3000
+        });
+
+      }
+      catch (err) {
+
+        toast.current.show({
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+          life: 4000
+        });
+
+      }
+      finally {
+
+        setLoading(false);
+
+      }
+    };
 
   // =============================
   // RESET PASSWORD
   // =============================
-  const handleResetPassword = async () => {
-    try {
-      if (resetData.newPassword !== resetData.confirmPassword) {
+  const handleResetPassword =
+    async () => {
+
+      try {
+
+        if (
+          resetData.newPassword !==
+          resetData.confirmPassword
+        ) {
+
+          toast.current.show({
+            severity: "warn",
+            summary: "Warning",
+            detail:
+              "Passwords do not match",
+            life: 3000
+          });
+
+          return;
+
+        }
+
+        setLoading(true);
+
+        const res = await fetch(
+          API_CONFIG.RESET_PASSWORD_URL,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+              "x-api-key":
+                API_CONFIG.API_KEY
+            },
+
+            body: JSON.stringify({
+              token: token,
+              newPassword:
+                resetData.newPassword
+            })
+          }
+        );
+
+        if (!res.ok) {
+
+          throw new Error();
+
+        }
+
         toast.current.show({
-          severity: "warn",
-          summary: "Warning",
-          detail: "Passwords do not match",
+          severity: "success",
+          summary: "Success",
+          detail:
+            "Password changed successfully",
           life: 3000
         });
-        return;
+
+        setResetData({
+          newPassword: "",
+          confirmPassword: ""
+        });
+
+        setShowResetPassword(false);
+
+        navigate("/");
+
       }
+      catch {
 
-      setLoading(true);
+        toast.current.show({
+          severity: "error",
+          summary: "Error",
+          detail:
+            "Password reset failed",
+          life: 3000
+        });
 
-      const res = await fetch(API_CONFIG.RESET_PASSWORD_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_CONFIG.API_KEY
-        },
-        body: JSON.stringify({
-          token: token,
-          newPassword: resetData.newPassword
-        })
-      });
+      }
+      finally {
 
-      if (!res.ok) throw new Error();
+        setLoading(false);
 
-      toast.current.show({
-        severity: "success",
-        summary: "Success",
-        detail: "Password changed successfully",
-        life: 3000
-      });
+      }
+    };
+    
 
-      setResetData({
-        newPassword: "",
-        confirmPassword: ""
-      });
-
-      setShowResetPassword(false);
-      navigate("/");
-    } catch {
-      toast.current.show({
-        severity: "error",
-        summary: "Error",
-        detail: "Password reset failed",
-        life: 3000
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log(roles)
 
   return (
+
     <div
       style={{
         minHeight: "100vh",
@@ -257,6 +480,7 @@ function Login() {
         padding: "20px"
       }}
     >
+
       <Toast ref={toast} />
 
       <Card
@@ -264,39 +488,60 @@ function Login() {
           width: "430px",
           borderRadius: "26px",
           padding: "10px",
-          border: "1px solid rgba(255,255,255,.25)",
-          boxShadow: "0 25px 60px rgba(0,0,0,.22)",
+          border:
+            "1px solid rgba(255,255,255,.25)",
+          boxShadow:
+            "0 25px 60px rgba(0,0,0,.22)",
           backdropFilter: "blur(12px)",
-          background: "rgba(255,255,255,.95)"
+          background:
+            "rgba(255,255,255,.95)"
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: "24px" }}>
+
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "24px"
+          }}
+        >
+
           <h2>
+
             {showResetPassword
               ? "Reset Password"
               : showForgotPassword
-              ? "Forgot Password"
-              : showRegister
-              ? "Create Account"
-              : "Welcome Back"}
+                ? "Forgot Password"
+                : showRegister
+                  ? "Create Account"
+                  : "Welcome Back"}
+
           </h2>
+
         </div>
 
         {/* RESET PASSWORD */}
         {showResetPassword ? (
+
           <>
+
             <Password
               placeholder="New Password"
               feedback={false}
               toggleMask
-              value={resetData.newPassword}
+              value={
+                resetData.newPassword
+              }
               onChange={(e) =>
                 setResetData({
                   ...resetData,
-                  newPassword: e.target.value
+                  newPassword:
+                    e.target.value
                 })
               }
-              style={{ width: "100%", marginBottom: "14px" }}
+              style={{
+                width: "100%",
+                marginBottom: "16px"
+              }}
               inputStyle={inputStyle}
             />
 
@@ -304,52 +549,87 @@ function Login() {
               placeholder="Confirm Password"
               feedback={false}
               toggleMask
-              value={resetData.confirmPassword}
+              value={
+                resetData.confirmPassword
+              }
               onChange={(e) =>
                 setResetData({
                   ...resetData,
-                  confirmPassword: e.target.value
+                  confirmPassword:
+                    e.target.value
                 })
               }
-              style={{ width: "100%", marginBottom: "14px" }}
+              style={{
+                width: "100%",
+                marginBottom: "16px"
+              }}
               inputStyle={inputStyle}
             />
 
             <Button
-              label={loading ? "Updating..." : "Reset Password"}
+              label="Reset Password"
               icon="pi pi-check"
-              onClick={handleResetPassword}
-              style={{ width: "100%", marginBottom: "10px" }}
+              onClick={
+                handleResetPassword
+              }
+              style={{
+                width: "100%",
+                background: "#16a34a",
+                border: "none",
+                borderRadius: "10px"
+              }}
             />
+
           </>
+
         ) : showForgotPassword ? (
+
           <>
             <InputText
-              placeholder="Enter your registered email"
+              placeholder="Enter Email"
               value={forgotEmail}
-              onChange={(e) => setForgotEmail(e.target.value)}
+              onChange={(e) =>
+                setForgotEmail(
+                  e.target.value
+                )
+              }
               style={inputStyle}
             />
 
             <Button
-              label={loading ? "Sending..." : "Send Reset Link"}
-              icon="pi pi-envelope"
-              onClick={handleForgotPassword}
+              label="Send Reset Link"
+              icon="pi pi-send"
+              onClick={
+                handleForgotPassword
+              }
               style={{
                 width: "100%",
-                marginBottom: "10px"
+                marginBottom: "10px",
+                background: "#f97316",
+                border: "none",
+                borderRadius: "10px"
               }}
             />
 
             <Button
               label="Back To Login"
               icon="pi pi-arrow-left"
-              onClick={() => setShowForgotPassword(false)}
-              className="p-button-secondary"
-              style={{ width: "100%" }}
+              onClick={() =>
+                setShowForgotPassword(
+                  false
+                )
+              }
+              style={{
+                width: "100%",
+                background: "#2563eb",
+                border: "none",
+                borderRadius: "10px"
+              }}
             />
           </>
+
         ) : !showRegister ? (
+
           <>
             <InputText
               placeholder="Email Address"
@@ -357,7 +637,8 @@ function Login() {
               onChange={(e) =>
                 setLoginData({
                   ...loginData,
-                  email: e.target.value
+                  email:
+                    e.target.value
                 })
               }
               style={inputStyle}
@@ -367,50 +648,98 @@ function Login() {
               placeholder="Password"
               feedback={false}
               toggleMask
-              value={loginData.password}
+              value={
+                loginData.password
+              }
               onChange={(e) =>
                 setLoginData({
                   ...loginData,
-                  password: e.target.value
+                  password:
+                    e.target.value
                 })
               }
-              style={{ width: "100%", marginBottom: "16px" }}
+              style={{
+                width: "100%",
+                marginBottom: "16px"
+              }}
               inputStyle={inputStyle}
             />
 
             <Button
-              label={loading ? "Please Wait..." : "Login"}
+              label={
+                loading
+                  ? "Please Wait..."
+                  : "Login"
+              }
               icon="pi pi-sign-in"
               onClick={handleLogin}
-              style={{ width: "100%", marginBottom: "10px" }}
+              style={{
+                width: "100%",
+                marginBottom: "10px",
+                background: "#2563eb",
+                border: "none",
+                borderRadius: "10px",
+                color: "#ffffff"
+              }}
             />
 
-            <Button
-              label="Forgot Password?"
-              icon="pi pi-key"
-              className="p-button-text"
-              onClick={() => setShowForgotPassword(true)}
-              style={{ width: "100%", marginBottom: "10px" }}
-            />
+            <div
+              style={{
+                textAlign: "right",
+                marginBottom: "15px"
+              }}
+            >
+              <span
+                onClick={() =>
+                  setShowForgotPassword(
+                    true
+                  )
+                }
+                style={{
+                  color: "#2563eb",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600"
+                }}
+              >
+                Forgot Password?
+              </span>
+            </div>
 
-            <Divider align="center">OR</Divider>
+            <Divider align="center">
+              OR
+            </Divider>
 
             <Button
               label="Create New Account"
               icon="pi pi-user-plus"
-              onClick={() => setShowRegister(true)}
-              style={{ width: "100%" }}
+              onClick={() =>
+                setShowRegister(true)
+              }
+              style={{
+                width: "100%",
+                background: "#7c3aed",
+                border: "none",
+                borderRadius: "10px",
+                color: "#ffffff"
+              }}
             />
+
           </>
+
         ) : (
+
           <>
             <InputText
               placeholder="User Name"
-              value={registerData.userName}
+              value={
+                registerData.userName
+              }
               onChange={(e) =>
                 setRegisterData({
                   ...registerData,
-                  userName: e.target.value
+                  userName:
+                    e.target.value
                 })
               }
               style={inputStyle}
@@ -418,11 +747,14 @@ function Login() {
 
             <InputText
               placeholder="First Name"
-              value={registerData.firstName}
+              value={
+                registerData.firstName
+              }
               onChange={(e) =>
                 setRegisterData({
                   ...registerData,
-                  firstName: e.target.value
+                  firstName:
+                    e.target.value
                 })
               }
               style={inputStyle}
@@ -430,11 +762,14 @@ function Login() {
 
             <InputText
               placeholder="Last Name"
-              value={registerData.lastName}
+              value={
+                registerData.lastName
+              }
               onChange={(e) =>
                 setRegisterData({
                   ...registerData,
-                  lastName: e.target.value
+                  lastName:
+                    e.target.value
                 })
               }
               style={inputStyle}
@@ -442,11 +777,14 @@ function Login() {
 
             <InputText
               placeholder="Email"
-              value={registerData.email}
+              value={
+                registerData.email
+              }
               onChange={(e) =>
                 setRegisterData({
                   ...registerData,
-                  email: e.target.value
+                  email:
+                    e.target.value
                 })
               }
               style={inputStyle}
@@ -454,59 +792,627 @@ function Login() {
 
             <InputText
               placeholder="Phone Number"
-              value={registerData.phoneNumber}
+              value={
+                registerData.phoneNumber
+              }
               onChange={(e) =>
                 setRegisterData({
                   ...registerData,
-                  phoneNumber: e.target.value
+                  phoneNumber:
+                    e.target.value
                 })
               }
               style={inputStyle}
             />
 
+           {/* ROLE ID DROPDOWN */}
+<select
+  value={registerData.roleId}
+  onChange={(e) =>
+    setRegisterData({
+      ...registerData,
+      roleId: parseInt(e.target.value)
+    })
+  }
+  style={inputStyle}
+>
+  <option value="">---Select Role---</option>
+
+  {roles
+    .filter((role) => role.isActive)
+    .map((role) => (
+      <option key={role.roleId} value={role.roleId}>
+        {role.role}
+      </option>
+    ))}
+</select>
+
             <Password
               placeholder="Password"
               feedback={false}
               toggleMask
-              value={registerData.password}
+              value={
+                registerData.password
+              }
               onChange={(e) =>
                 setRegisterData({
                   ...registerData,
-                  password: e.target.value
+                  password:
+                    e.target.value
                 })
               }
-              style={{ width: "100%", marginBottom: "16px" }}
+              style={{
+                width: "100%",
+                marginBottom: "16px"
+              }}
               inputStyle={inputStyle}
             />
 
             <Button
               label="Register"
               icon="pi pi-check"
-              onClick={handleRegister}
-              style={{ width: "100%", marginBottom: "10px" }}
+              onClick={
+                handleRegister
+              }
+              style={{
+                width: "100%",
+                marginBottom: "10px",
+                background: "#16a34a",
+                border: "none",
+                borderRadius: "10px"
+              }}
             />
 
             <Button
               label="Clear Form"
               icon="pi pi-refresh"
-              onClick={clearRegisterForm}
-              style={{ width: "100%", marginBottom: "10px" }}
+              onClick={
+                clearRegisterForm
+              }
+              style={{
+                width: "100%",
+                marginBottom: "10px",
+                background: "#f59e0b",
+                border: "none",
+                borderRadius: "10px"
+              }}
             />
 
             <Button
               label="Back To Login"
               icon="pi pi-arrow-left"
-              onClick={() => setShowRegister(false)}
-              style={{ width: "100%" }}
+              onClick={() =>
+                setShowRegister(false)
+              }
+              style={{
+                width: "100%",
+                background: "#2563eb",
+                border: "none",
+                borderRadius: "10px"
+              }}
             />
+
           </>
+
         )}
+
       </Card>
+
     </div>
   );
 }
 
 export default Login;
+
+
+// import { useNavigate, useSearchParams } from "react-router-dom";
+
+// import "primereact/resources/themes/lara-light-cyan/theme.css";
+// import "primeicons/primeicons.css";
+
+// import { Card } from "primereact/card";
+// import { Button } from "primereact/button";
+// import { InputText } from "primereact/inputtext";
+// import { Password } from "primereact/password";
+// import { Toast } from "primereact/toast";
+// import { Divider } from "primereact/divider";
+// import React, { useRef, useState, useEffect } from "react";
+// import API_CONFIG from "./api";
+
+// function Login() {
+//   const toast = useRef(null);
+//   const navigate = useNavigate();
+//   const [searchParams] = useSearchParams();
+
+//   const token = searchParams.get("token");
+
+//   const [showRegister, setShowRegister] = useState(false);
+//   const [showForgotPassword, setShowForgotPassword] = useState(false);
+//   const [showResetPassword, setShowResetPassword] = useState(!!token);
+
+//   const [loading, setLoading] = useState(false);
+//   const [forgotEmail, setForgotEmail] = useState("");
+
+//   const [loginData, setLoginData] = useState({
+//     email: "",
+//     password: ""
+//   });
+
+//   const [registerData, setRegisterData] = useState({
+//     userName: "",
+//     firstName: "",
+//     lastName: "",
+//     email: "",
+//     phoneNumber: "",
+//     password: ""
+//   });
+
+//   const [resetData, setResetData] = useState({
+//     newPassword: "",
+//     confirmPassword: ""
+//   });
+
+//   const inputStyle = {
+//     width: "100%",
+//     marginBottom: "14px",
+//     height: "46px",
+//     borderRadius: "12px"
+//   };
+
+//   const clearRegisterForm = () => {
+//     setRegisterData({
+//       userName: "",
+//       firstName: "",
+//       lastName: "",
+//       email: "",
+//       phoneNumber: "",
+//       password: ""
+//     });
+//   };
+
+//   // =============================
+//   // LOGIN
+//   // =============================
+//   const handleLogin = async () => {
+//     try {
+//       setLoading(true);
+
+//       const res = await fetch(API_CONFIG.AUTH_LOGIN_URL, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           "x-api-key": API_CONFIG.API_KEY
+//         },
+//         body: JSON.stringify(loginData)
+//       });
+
+//       if (!res.ok) throw new Error();
+
+//       const data = await res.json();
+//       localStorage.setItem("token", data.token);
+
+//       toast.current.show({
+//         severity: "success",
+//         summary: "Success",
+//         detail: "Login Successful",
+//         life: 3000
+//       });
+
+//       navigate("/employee");
+//     } catch {
+//       toast.current.show({
+//         severity: "error",
+//         summary: "Error",
+//         detail: "Invalid Login",
+//         life: 3000
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // =============================
+//   // REGISTER
+//   // =============================
+//   const handleRegister = async () => {
+//     try {
+//       setLoading(true);
+
+//       const res = await fetch(API_CONFIG.USERS_URL, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           "x-api-key": API_CONFIG.API_KEY
+//         },
+//         body: JSON.stringify(registerData)
+//       });
+
+//       if (!res.ok) throw new Error();
+
+//       toast.current.show({
+//         severity: "success",
+//         summary: "Success",
+//         detail: "Registration Successful",
+//         life: 3000
+//       });
+
+//       clearRegisterForm();
+//       setShowRegister(false);
+//     } catch {
+//       toast.current.show({
+//         severity: "error",
+//         summary: "Error",
+//         detail: "Registration Failed",
+//         life: 3000
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // =============================
+//   // FORGOT PASSWORD
+//   // =============================
+//  const handleForgotPassword = async () => {
+//   try {
+//     setLoading(true);
+
+//     const res = await fetch(API_CONFIG.FORGOT_PASSWORD_URL, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json"
+//       },
+//       body: JSON.stringify({
+//         email: forgotEmail
+//       })
+//     });
+
+//     const text = await res.text();
+
+//     console.log("API RESPONSE:", text); // 👈 DEBUG
+
+//     if (!res.ok) throw new Error(text);
+
+//     toast.current.show({
+//       severity: "success",
+//       summary: "Success",
+//       detail: text,
+//       life: 3000
+//     });
+
+//   } catch (err) {
+//     console.error("ERROR:", err); // 👈 DEBUG
+
+//     toast.current.show({
+//       severity: "error",
+//       summary: "Error",
+//       detail: err.message,
+//       life: 4000
+//     });
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+//   // =============================
+//   // RESET PASSWORD
+//   // =============================
+//   const handleResetPassword = async () => {
+//     try {
+//       if (resetData.newPassword !== resetData.confirmPassword) {
+//         toast.current.show({
+//           severity: "warn",
+//           summary: "Warning",
+//           detail: "Passwords do not match",
+//           life: 3000
+//         });
+//         return;
+//       }
+
+//       setLoading(true);
+
+//       const res = await fetch(API_CONFIG.RESET_PASSWORD_URL, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           "x-api-key": API_CONFIG.API_KEY
+//         },
+//         body: JSON.stringify({
+//           token: token,
+//           newPassword: resetData.newPassword
+//         })
+//       });
+
+//       if (!res.ok) throw new Error();
+
+//       toast.current.show({
+//         severity: "success",
+//         summary: "Success",
+//         detail: "Password changed successfully",
+//         life: 3000
+//       });
+
+//       setResetData({
+//         newPassword: "",
+//         confirmPassword: ""
+//       });
+
+//       setShowResetPassword(false);
+//       navigate("/");
+//     } catch {
+//       toast.current.show({
+//         severity: "error",
+//         summary: "Error",
+//         detail: "Password reset failed",
+//         life: 3000
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div
+//       style={{
+//         minHeight: "100vh",
+//         background:
+//           "linear-gradient(135deg,#0ea5e9 0%, #2563eb 45%, #7c3aed 100%)",
+//         display: "flex",
+//         justifyContent: "center",
+//         alignItems: "center",
+//         padding: "20px"
+//       }}
+//     >
+//       <Toast ref={toast} />
+
+//       <Card
+//         style={{
+//           width: "430px",
+//           borderRadius: "26px",
+//           padding: "10px",
+//           border: "1px solid rgba(255,255,255,.25)",
+//           boxShadow: "0 25px 60px rgba(0,0,0,.22)",
+//           backdropFilter: "blur(12px)",
+//           background: "rgba(255,255,255,.95)"
+//         }}
+//       >
+//         <div style={{ textAlign: "center", marginBottom: "24px" }}>
+//           <h2>
+//             {showResetPassword
+//               ? "Reset Password"
+//               : showForgotPassword
+//               ? "Forgot Password"
+//               : showRegister
+//               ? "Create Account"
+//               : "Welcome Back"}
+//           </h2>
+//         </div>
+
+//         {/* RESET PASSWORD */}
+//         {showResetPassword ? (
+//           <>
+//             <Password
+//               placeholder="New Password"
+//               feedback={false}
+//               toggleMask
+//               value={resetData.newPassword}
+//               onChange={(e) =>
+//                 setResetData({
+//                   ...resetData,
+//                   newPassword: e.target.value
+//                 })
+//               }
+//               style={{ width: "100%", marginBottom: "14px" }}
+//               inputStyle={inputStyle}
+//             />
+
+//             <Password
+//               placeholder="Confirm Password"
+//               feedback={false}
+//               toggleMask
+//               value={resetData.confirmPassword}
+//               onChange={(e) =>
+//                 setResetData({
+//                   ...resetData,
+//                   confirmPassword: e.target.value
+//                 })
+//               }
+//               style={{ width: "100%", marginBottom: "14px" }}
+//               inputStyle={inputStyle}
+//             />
+
+//             <Button
+//               label={loading ? "Updating..." : "Reset Password"}
+//               icon="pi pi-check"
+//               onClick={handleResetPassword}
+//               style={{ width: "100%", marginBottom: "10px" }}
+//             />
+//           </>
+//         ) : showForgotPassword ? (
+//           <>
+//             <InputText
+//               placeholder="Enter your registered email"
+//               value={forgotEmail}
+//               onChange={(e) => setForgotEmail(e.target.value)}
+//               style={inputStyle}
+//             />
+
+//             <Button
+//               label={loading ? "Sending..." : "Send Reset Link"}
+//               icon="pi pi-envelope"
+//               onClick={handleForgotPassword}
+//               style={{
+//                 width: "100%",
+//                 marginBottom: "10px"
+//               }}
+//             />
+
+//             <Button
+//               label="Back To Login"
+//               icon="pi pi-arrow-left"
+//               onClick={() => setShowForgotPassword(false)}
+//               className="p-button-secondary"
+//               style={{ width: "100%" }}
+//             />
+//           </>
+//         ) : !showRegister ? (
+//           <>
+//             <InputText
+//               placeholder="Email Address"
+//               value={loginData.email}
+//               onChange={(e) =>
+//                 setLoginData({
+//                   ...loginData,
+//                   email: e.target.value
+//                 })
+//               }
+//               style={inputStyle}
+//             />
+
+//             <Password
+//               placeholder="Password"
+//               feedback={false}
+//               toggleMask
+//               value={loginData.password}
+//               onChange={(e) =>
+//                 setLoginData({
+//                   ...loginData,
+//                   password: e.target.value
+//                 })
+//               }
+//               style={{ width: "100%", marginBottom: "16px" }}
+//               inputStyle={inputStyle}
+//             />
+
+//             <Button
+//               label={loading ? "Please Wait..." : "Login"}
+//               icon="pi pi-sign-in"
+//               onClick={handleLogin}
+//               style={{ width: "100%", marginBottom: "10px" }}
+//             />
+
+//             <Button
+//               label="Forgot Password?"
+//               icon="pi pi-key"
+//               className="p-button-text"
+//               onClick={() => setShowForgotPassword(true)}
+//               style={{ width: "100%", marginBottom: "10px" }}
+//             />
+
+//             <Divider align="center">OR</Divider>
+
+//             <Button
+//               label="Create New Account"
+//               icon="pi pi-user-plus"
+//               onClick={() => setShowRegister(true)}
+//               style={{ width: "100%" }}
+//             />
+//           </>
+//         ) : (
+//           <>
+//             <InputText
+//               placeholder="User Name"
+//               value={registerData.userName}
+//               onChange={(e) =>
+//                 setRegisterData({
+//                   ...registerData,
+//                   userName: e.target.value
+//                 })
+//               }
+//               style={inputStyle}
+//             />
+
+//             <InputText
+//               placeholder="First Name"
+//               value={registerData.firstName}
+//               onChange={(e) =>
+//                 setRegisterData({
+//                   ...registerData,
+//                   firstName: e.target.value
+//                 })
+//               }
+//               style={inputStyle}
+//             />
+
+//             <InputText
+//               placeholder="Last Name"
+//               value={registerData.lastName}
+//               onChange={(e) =>
+//                 setRegisterData({
+//                   ...registerData,
+//                   lastName: e.target.value
+//                 })
+//               }
+//               style={inputStyle}
+//             />
+
+//             <InputText
+//               placeholder="Email"
+//               value={registerData.email}
+//               onChange={(e) =>
+//                 setRegisterData({
+//                   ...registerData,
+//                   email: e.target.value
+//                 })
+//               }
+//               style={inputStyle}
+//             />
+
+//             <InputText
+//               placeholder="Phone Number"
+//               value={registerData.phoneNumber}
+//               onChange={(e) =>
+//                 setRegisterData({
+//                   ...registerData,
+//                   phoneNumber: e.target.value
+//                 })
+//               }
+//               style={inputStyle}
+//             />
+
+//             <Password
+//               placeholder="Password"
+//               feedback={false}
+//               toggleMask
+//               value={registerData.password}
+//               onChange={(e) =>
+//                 setRegisterData({
+//                   ...registerData,
+//                   password: e.target.value
+//                 })
+//               }
+//               style={{ width: "100%", marginBottom: "16px" }}
+//               inputStyle={inputStyle}
+//             />
+
+//             <Button
+//               label="Register"
+//               icon="pi pi-check"
+//               onClick={handleRegister}
+//               style={{ width: "100%", marginBottom: "10px" }}
+//             />
+
+//             <Button
+//               label="Clear Form"
+//               icon="pi pi-refresh"
+//               onClick={clearRegisterForm}
+//               style={{ width: "100%", marginBottom: "10px" }}
+//             />
+
+//             <Button
+//               label="Back To Login"
+//               icon="pi pi-arrow-left"
+//               onClick={() => setShowRegister(false)}
+//               style={{ width: "100%" }}
+//             />
+//           </>
+//         )}
+//       </Card>
+//     </div>
+//   );
+// }
+
+// export default Login;
 
 
 

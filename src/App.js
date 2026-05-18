@@ -29,6 +29,7 @@ import StudentList from "./StudentList";
 import { ConfirmDialog } from "primereact/confirmdialog";
 import Login from "./Login";
 import ResetPassword from "./ResetPassword";
+// import Roles from "./Roles";
 
 function App() {
   return (
@@ -56,6 +57,10 @@ function App() {
           <Route path="/department" element={<DepartmentList />} />
           <Route path="/student" element={<StudentList />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          {/* <Route
+            path="/roles"
+            element={<Roles />} */}
+          /
         </Routes>
       </div>
     </BrowserRouter>
